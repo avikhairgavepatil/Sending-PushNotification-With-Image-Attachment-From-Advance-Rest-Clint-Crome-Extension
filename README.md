@@ -97,3 +97,74 @@ Body :=
 
 }"
 
+
+in ios swift 
+
+in service.extension Class file 
+
+
+import UserNotifications
+
+class NotificationService: UNNotificationServiceExtension {
+    
+    let imageKey = AnyHashable("gcm.notification.url")
+    
+    var contentHandler: ((UNNotificationContent) -> Void)?
+    var bestAttemptContent: UNMutableNotificationContent?
+    
+    override func didReceive(_ request: UNNotificationRequest, withContentHandler contentHandler: @escaping (UNNotificationContent) -> Void) {
+        self.contentHandler = contentHandler
+        bestAttemptContent = (request.content.mutableCopy() as? UNMutableNotificationContent)
+       // let userInfo : [AnyHashable: Any] = response.notification.request.content.userInfo
+        if let imageUrl = request.content.userInfo[imageKey] as? String {
+            
+            
+            let session = URLSession.shared
+            
+            
+            
+            
+            let url = URL(string: imageUrl)!
+            
+            
+            
+            let task = session.dataTask(with: url) { (data, response, err) in
+                
+                if let data = data {
+                    do {
+                        let writePath = URL(fileURLWithPath: NSTemporaryDirectory()).appendingPathComponent("push.png")
+                        try data.write(to: writePath)
+                        
+                        if let bestAttemptContent = self.bestAttemptContent {
+                            let attachment = try UNNotificationAttachment(identifier: "nnsnodnb_demo", url: writePath, options: nil)
+                            bestAttemptContent.attachments = [attachment]
+                            contentHandler(bestAttemptContent)
+                        }
+                    } catch let error as NSError {
+                        print(error.localizedDescription)
+                    
+                        if let bestAttemptContent = self.bestAttemptContent {
+                            contentHandler(bestAttemptContent)
+                        }
+                    }
+                }
+            }
+            task.resume()
+            
+        }
+            
+else {
+            if let bestAttemptContent = bestAttemptContent {
+                contentHandler(bestAttemptContent)
+            }
+        }
+    }
+    
+    override func serviceExtensionTimeWillExpire() {
+        if let contentHandler = contentHandler, let bestAttemptContent =  bestAttemptContent {
+            contentHandler(bestAttemptContent)
+        }
+    }
+}
+
+
